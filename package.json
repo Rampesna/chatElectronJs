@@ -1,0 +1,14 @@
+{
+  "name": "chat-electron-js",
+  "version": "1.0.0",
+  "description": "Chat app using electron and nodejs",
+  "main": "main.js",
+  "author": "Talha Can",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^20.1.0"
+  },
+  "scripts": {
+    "start": "electron ."
+  }
+}
