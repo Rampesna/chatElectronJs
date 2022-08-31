@@ -83,55 +83,8 @@
                                         </div>
                                     </div>
                                     <div class="card-body" id="kt_chat_messenger_body">
-                                        <div class="scroll-y me-n5 pe-5 h-300px h-lg-auto" data-kt-element="messages" data-kt-scroll="true" data-kt-scroll-activate="{default: false, lg: true}" data-kt-scroll-max-height="auto" data-kt-scroll-dependencies="#kt_header, #kt_toolbar, #kt_footer, #kt_chat_messenger_header, #kt_chat_messenger_footer" data-kt-scroll-wrappers="#kt_content, #kt_chat_messenger_body" data-kt-scroll-offset="5px">
-                                            <div class="d-flex justify-content-start mb-10">
-                                                <!--begin::Wrapper-->
-                                                <div class="d-flex flex-column align-items-start">
-                                                    <!--begin::User-->
-                                                    <div class="d-flex align-items-center mb-2">
-                                                        <!--begin::Avatar-->
-                                                        <div class="symbol symbol-35px symbol-circle">
-                                                            <img alt="Pic" src="assets/media/avatars/300-25.jpg" />
-                                                        </div>
-                                                        <!--end::Avatar-->
-                                                        <!--begin::Details-->
-                                                        <div class="ms-3">
-                                                            <a href="#" class="fs-5 fw-bolder text-gray-900 text-hover-primary me-1">Brian Cox</a>
-                                                            <span class="text-muted fs-7 mb-1">2 mins</span>
-                                                        </div>
-                                                        <!--end::Details-->
-                                                    </div>
-                                                    <!--end::User-->
-                                                    <!--begin::Text-->
-                                                    <div class="p-5 rounded bg-light-info text-dark fw-bold mw-lg-400px text-start" data-kt-element="message-text">How likely are you to recommend our company to your friends and family ?</div>
-                                                    <!--end::Text-->
-                                                </div>
-                                                <!--end::Wrapper-->
-                                            </div>
-                                            <div class="d-flex justify-content-end mb-10">
-                                                <!--begin::Wrapper-->
-                                                <div class="d-flex flex-column align-items-end">
-                                                    <!--begin::User-->
-                                                    <div class="d-flex align-items-center mb-2">
-                                                        <!--begin::Details-->
-                                                        <div class="me-3">
-                                                            <span class="text-muted fs-7 mb-1">5 mins</span>
-                                                            <a href="#" class="fs-5 fw-bolder text-gray-900 text-hover-primary ms-1">You</a>
-                                                        </div>
-                                                        <!--end::Details-->
-                                                        <!--begin::Avatar-->
-                                                        <div class="symbol symbol-35px symbol-circle">
-                                                            <img alt="Pic" src="assets/media/avatars/300-1.jpg" />
-                                                        </div>
-                                                        <!--end::Avatar-->
-                                                    </div>
-                                                    <!--end::User-->
-                                                    <!--begin::Text-->
-                                                    <div class="p-5 rounded bg-light-primary text-dark fw-bold mw-lg-400px text-end" data-kt-element="message-text">Hey there, we’re just writing to let you know that you’ve been subscribed to a repository on GitHub.</div>
-                                                    <!--end::Text-->
-                                                </div>
-                                                <!--end::Wrapper-->
-                                            </div>
+                                        <div id="messagesBody" class="scroll-y me-n5 pe-5 h-300px h-lg-auto" data-kt-scroll="true" data-kt-scroll-activate="{default: false, lg: true}" data-kt-scroll-max-height="auto" data-kt-scroll-offset="5px">
+
                                         </div>
                                     </div>
                                 </div>
@@ -162,22 +115,67 @@
     </div>
 </div>
 
-<script>
-        var hostUrl = "assets/";
-</script>
-
 <script src="assets/plugins/global/plugins.bundle.js"></script>
 <script src="assets/js/scripts.bundle.js"></script>
 <script src="assets/js/custom/apps/chat/chat.js"></script>
+<script src="assets/socketio/socket.io.min.js"></script>
 
 <script>
 
-    const newMessageElement = document.getElementById('newMessage');
+    const token = $.ajax({
+        async: false,
+        type: 'get',
+        url: '../auth.json'
+    }).responseJSON.token;
 
-    newMessageElement.addEventListener('keydown', function (e) {
+    const user = $.ajax({
+        async: false,
+        type: 'get',
+        url: 'http://127.0.0.1:5000/user/getProfile',
+        headers: {
+            'Authorization': 'Bearer ' + token
+        },
+        error: function (error) {
+            console.log(error);
+        }
+    }).responseJSON.data;
+
+    const socketIo = io('http://127.0.0.1:3000');
+
+    const newMessageInput = $('#newMessage');
+
+    var messagesBody = $('#messagesBody');
+
+    socketIo.on("sendMessage", (messageData) => {
+        console.log(messageData);
+        messagesBody.append(`
+        <div class="d-flex justify-content-${messageData.sender_id === user.id ? 'start' : 'end'} mb-10">
+            <div class="d-flex flex-column align-items-${messageData.sender_id === user.id ? 'start' : 'end'}">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="symbol symbol-35px symbol-circle">
+                        <img alt="Pic" src="assets/media/avatars/300-25.jpg" />
+                    </div>
+                    <div class="ms-3">
+                        <a href="#" class="fs-5 fw-bolder text-gray-900 text-hover-primary me-1">${messageData.sender.data.name}</a>
+                    </div>
+                </div>
+                <div class="p-5 rounded bg-light-info text-dark fw-bold mw-lg-400px text-start" data-kt-element="message-text">${messageData.message}</div>
+            </div>
+        </div>
+        `);
+    });
+
+    newMessageInput.on('keydown', function (e) {
         const keyCode = e.which || e.keyCode;
         if (keyCode === 13 && !e.shiftKey) {
             e.preventDefault();
+            var message = newMessageInput.val();
+            socketIo.emit("sendMessage", {
+                token: token,
+                message: message,
+                userId: '630f5e911600e8e020abb0d7'
+            });
+            newMessageInput.val('');
         } else if (keyCode === 13 && e.shiftKey) {
             return true;
         }
